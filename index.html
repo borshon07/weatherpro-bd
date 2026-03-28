@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Weather Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--ac:#4FC3F7;--bg:#f5f7fa;--bg2:#fff;--bg3:#f0f2f5;--border:#e2e8f0;--text:#1a202c;--text2:#64748b;--text3:#94a3b8}
+body{background:var(--bg);font-family:'Space Grotesk',sans-serif;color:var(--text);min-height:100vh;transition:background .3s}
+body.dark{--bg:#0f1117;--bg2:#1a1d27;--bg3:#252836;--border:#2d3147;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b}
+#app{max-width:700px;margin:0 auto;padding:20px 16px 60px}
+/* header */
+.app-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.app-logo{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:var(--ac)}
+.header-right{display:flex;gap:8px;align-items:center}
+.dark-btn{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--border);background:var(--bg2);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.dark-btn:hover{border-color:var(--ac)}
+/* search */
+.topbar{display:flex;gap:8px;margin-bottom:16px;align-items:center}
+.topbar input{flex:1;padding:12px 18px;border-radius:40px;border:1.5px solid var(--border);background:var(--bg2);font-family:'Space Grotesk',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border-color .2s}
+.topbar input:focus{border-color:var(--ac)}
+.topbar input::placeholder{color:var(--text3)}
+.search-btn{padding:12px 22px;border-radius:40px;border:none;background:var(--ac);color:#fff;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.search-btn:hover{opacity:.85;transform:scale(1.02)}
+.loc-btn{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--border);background:var(--bg2);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.loc-btn:hover{border-color:var(--ac)}
+/* unit */
+.unit-row{display:flex;gap:6px;justify-content:flex-end;margin-bottom:14px}
+.ubtn{padding:6px 18px;border-radius:40px;border:1.5px solid var(--border);background:var(--bg2);font-size:12px;font-weight:600;cursor:pointer;color:var(--text2);transition:all .2s;font-family:'Space Grotesk',sans-serif}
+.ubtn.active{background:var(--ac);color:#fff;border-color:transparent}
+/* error */
+.err{background:#fff0f0;border:1px solid #fca5a5;border-radius:12px;padding:12px 16px;font-size:13px;color:#b91c1c;margin-bottom:14px;display:none}
+body.dark .err{background:#2d1515;border-color:#7f1d1d;color:#fca5a5}
+/* loading */
+.loading{text-align:center;padding:60px 20px;color:var(--text2)}
+.spin{display:inline-block;animation:spin 1s linear infinite;font-size:32px}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* tabs */
+.tabs{display:flex;gap:0;margin-bottom:18px;background:var(--bg3);border-radius:40px;padding:4px}
+.tab{flex:1;padding:9px 0;border-radius:40px;border:none;background:transparent;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:500;cursor:pointer;color:var(--text2);transition:all .2s;text-align:center}
+.tab.active{background:var(--ac);color:#fff;font-weight:600}
+/* tab content */
+.tab-content{display:none}
+.tab-content.active{display:block}
+/* hero */
+.hero{border-radius:24px;padding:28px;margin-bottom:14px;position:relative;overflow:hidden;background:var(--hero-bg,linear-gradient(135deg,#1a1a2e,#16213e,#0f3460));min-height:200px;transition:background .5s}
+.hero-particles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.particle{position:absolute;border-radius:50%;background:rgba(255,255,255,0.07);animation:drift linear infinite}
+@keyframes drift{0%{transform:translateY(0) scale(1);opacity:.6}100%{transform:translateY(-130px) scale(1.5);opacity:0}}
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:1}
+.city-name{font-family:'Bebas Neue',sans-serif;font-size:34px;color:#fff;letter-spacing:1px;text-shadow:0 2px 12px rgba(0,0,0,.3)}
+.country-tag{display:inline-block;background:rgba(255,255,255,.18);color:rgba(255,255,255,.9);font-size:11px;padding:2px 10px;border-radius:20px;margin-left:8px;vertical-align:middle;font-weight:500}
+.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#4ade80;margin-right:5px;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.datetime{color:rgba(255,255,255,.75);font-size:12px;margin-top:7px}
+.weather-emoji{font-size:58px;line-height:1;animation:bob 4s ease-in-out infinite;filter:drop-shadow(0 4px 16px rgba(0,0,0,.2))}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-9px) rotate(3deg)}}
+.hero-mid{display:flex;justify-content:space-between;align-items:flex-end;margin-top:20px;position:relative;z-index:1}
+.temp-big{font-family:'Bebas Neue',sans-serif;font-size:90px;color:#fff;line-height:.9;text-shadow:0 4px 20px rgba(0,0,0,.2)}
+.temp-deg{font-size:36px;vertical-align:super}
+.hero-info{text-align:right}
+.hero-cond{font-size:16px;font-weight:600;color:#fff;margin-bottom:4px;text-transform:capitalize}
+.hero-feels{font-size:12px;color:rgba(255,255,255,.7)}
+.hero-minmax{font-size:12px;color:rgba(255,255,255,.6);margin-top:4px}
+/* cards */
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+@media(max-width:480px){.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:4px;transition:border-color .2s,transform .2s}
+.card:hover{border-color:var(--ac);transform:translateY(-1px)}
+.clabel{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.9px;color:var(--text3)}
+.cval{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--text);line-height:1.1}
+.csub{font-size:11px;color:var(--text2);margin-top:2px}
+.cicon{font-size:16px;margin-bottom:6px}
+.bar-track{width:100%;height:5px;border-radius:3px;background:var(--bg3);margin-top:8px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+/* hourly */
+.hourly-scroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;margin-bottom:14px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.hour-card{flex-shrink:0;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:12px 14px;text-align:center;min-width:62px;transition:all .2s}
+.hour-card.now{background:var(--ac);border-color:transparent}
+.hour-card.now .htime,.hour-card.now .htemp{color:#fff}
+.htime{font-size:10px;font-weight:600;color:var(--text3);margin-bottom:6px;display:block}
+.hicon{font-size:22px;display:block;margin-bottom:6px}
+.htemp{font-family:'Bebas Neue',sans-serif;font-size:19px;color:var(--text)}
+/* sun */
+.sun-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:18px 20px;margin-bottom:14px;display:flex;align-items:center;gap:16px}
+.sun-item{text-align:center;min-width:72px}
+.slabel{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.9px;color:var(--text3);margin-bottom:6px}
+.stime{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text)}
+.sun-arc-svg{flex:1}
+/* forecast */
+.section-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:14px}
+.sec-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.9px;color:var(--text3);margin-bottom:14px}
+.frow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.frow:last-child{border-bottom:none;padding-bottom:0}
+.fday{font-size:13px;font-weight:500;color:var(--text);width:78px;flex-shrink:0}
+.ficon{font-size:18px;width:22px;text-align:center;flex-shrink:0}
+.fdesc{font-size:11px;color:var(--text2);flex:1;text-transform:capitalize}
+.fbar-wrap{width:70px;height:5px;border-radius:3px;background:var(--bg3);overflow:hidden;flex-shrink:0}
+.fbar{height:100%;border-radius:3px;background:linear-gradient(90deg,#4FC3F7,#FFB347)}
+.ftemps{display:flex;gap:8px;font-size:13px;flex-shrink:0;min-width:55px;justify-content:flex-end}
+.fhi{font-weight:600;color:var(--text)}
+.flo{color:var(--text3)}
+/* map */
+.map-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:14px}
+.map-inner{background:linear-gradient(135deg,#0f1b2d,#1a2d42,#0d2137);height:180px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;position:relative;overflow:hidden}
+.map-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(79,195,247,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(79,195,247,.07) 1px,transparent 1px);background-size:30px 30px}
+.map-pin{font-size:34px;z-index:1;animation:mbounce .9s ease infinite alternate}
+@keyframes mbounce{from{transform:translateY(0)}to{transform:translateY(-7px)}}
+.map-label{color:rgba(255,255,255,.8);font-size:13px;z-index:1;font-weight:600}
+.map-coords{color:rgba(255,255,255,.4);font-size:11px;z-index:1}
+.map-info{padding:14px 16px;display:flex;justify-content:space-between}
+.map-stat .clabel{margin-bottom:4px}
+.map-stat .cval{font-size:19px}
+/* alert */
+.alert-banner{border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px;animation:slideIn .3s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.alert-warn{background:#fffbeb;border:1px solid #fbbf24}
+.alert-danger{background:#fef2f2;border:1px solid #f87171}
+body.dark .alert-warn{background:#2d2500;border-color:#92400e}
+body.dark .alert-danger{background:#2d0a0a;border-color:#991b1b}
+.alert-icon{font-size:20px;flex-shrink:0}
+.alert-text{font-size:12px;font-weight:500;color:var(--text);flex:1;line-height:1.5}
+/* comfort */
+.comfort-wrap{display:flex;align-items:center;gap:12px;margin-top:10px}
+.comfort-label{font-size:11px;color:var(--text2);flex-shrink:0}
+.comfort-bar{flex:1;height:8px;border-radius:4px;background:linear-gradient(90deg,#4FC3F7,#66BB6A,#FFB347,#EF5350);position:relative}
+.comfort-marker{position:absolute;top:-5px;width:18px;height:18px;border-radius:50%;background:var(--bg2);border:2.5px solid var(--text);transform:translateX(-50%);transition:left .8s ease;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+/* tip card */
+.tip-card{background:linear-gradient(135deg,rgba(79,195,247,.08),rgba(79,195,247,.03));border:1px solid rgba(79,195,247,.25);border-radius:16px;padding:16px;margin-bottom:14px;display:flex;gap:12px;align-items:flex-start}
+.tip-icon{font-size:26px;flex-shrink:0}
+.tip-title{font-weight:600;margin-bottom:4px;color:var(--text);font-size:14px}
+.tip-body{font-size:13px;color:var(--text2);line-height:1.6}
+/* news */
+.news-item{padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:all .2s}
+.news-item:last-child{border-bottom:none;padding-bottom:0}
+.news-item:hover .news-title{color:var(--ac)}
+.news-tag{display:inline-block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:2px 8px;border-radius:20px;margin-bottom:6px}
+.tag-warn{background:#fffbeb;color:#92400e}
+.tag-info{background:#eff6ff;color:#1e40af}
+.tag-alert{background:#fef2f2;color:#991b1b}
+.tag-tip{background:#f0fdf4;color:#166534}
+body.dark .tag-warn{background:#2d2500;color:#fbbf24}
+body.dark .tag-info{background:#0c1a3d;color:#93c5fd}
+body.dark .tag-alert{background:#2d0a0a;color:#fca5a5}
+body.dark .tag-tip{background:#0a2d15;color:#86efac}
+.news-title{font-size:13px;font-weight:600;color:var(--text);line-height:1.4;margin-bottom:4px;transition:color .2s}
+.news-meta{font-size:11px;color:var(--text3)}
+/* footer */
+.footer{text-align:center;font-size:11px;color:var(--text3);margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="app-header">
+    <div class="app-logo">⛅ WeatherPro</div>
+    <div class="header-right">
+      <button class="dark-btn" onclick="toggleDark()" id="darkbtn" title="Toggle dark mode">🌙</button>
+    </div>
+  </div>
+
+  <div class="topbar">
+    <button class="loc-btn" onclick="getLocation()" title="Use my location">📍</button>
+    <input type="text" id="ci" placeholder="Search any city worldwide..." onkeydown="if(event.key==='Enter')doSearch()"/>
+    <button class="search-btn" onclick="doSearch()">Search</button>
+  </div>
+  <div class="unit-row">
+    <button class="ubtn active" id="bc" onclick="setUnit('C')">°C</button>
+    <button class="ubtn" id="bf" onclick="setUnit('F')">°F</button>
+  </div>
+  <div class="err" id="err"></div>
+  <div id="main"><div class="loading"><span class="spin">🌐</span><br><br>Detecting your location...</div></div>
+  <div class="footer">WeatherPro · Powered by OpenWeatherMap · Data updates every 10 min</div>
+</div>
+
+<script>
+const K='cfc8cd8f3ed1ce72694691750f24a6c5';
+let unit='C',W=null,F=null,AQ=null,activeTab='weather',dark=false;
+
+const toF=c=>Math.round(c*9/5+32);
+const disp=c=>unit==='C'?Math.round(c):toF(c);
+
+function toggleDark(){
+  dark=!dark;
+  document.body.classList.toggle('dark',dark);
+  document.getElementById('darkbtn').textContent=dark?'☀️':'🌙';
+}
+
+function wIcon(id,day=true){
+  if(id<300)return'⛈️';if(id<400)return'🌦️';if(id<500)return'🌦️';
+  if(id===500)return'🌦️';if(id<511)return'🌧️';if(id<600)return'🌨️';
+  if(id<700)return'❄️';if(id<800)return'🌫️';if(id===800)return day?'☀️':'🌙';
+  if(id===801)return day?'🌤️':'☁️';if(id<=804)return'☁️';return'🌡️';
+}
+function theme(id){
+  if(id<300)return{bg:'linear-gradient(135deg,#1a1a3e,#2d1b4e,#1a0a2e)',ac:'#8B7CF6'};
+  if(id<600)return{bg:'linear-gradient(135deg,#0f2027,#203a43,#2c5364)',ac:'#4FC3F7'};
+  if(id<700)return{bg:'linear-gradient(135deg,#cdd9e5,#b8ccdd,#9ab5cc)',ac:'#64B5F6'};
+  if(id<800)return{bg:'linear-gradient(135deg,#3a3a4a,#52525e,#44444e)',ac:'#B0BEC5'};
+  if(id===800)return{bg:'linear-gradient(135deg,#f97316,#fb923c,#fbbf24)',ac:'#FF9500'};
+  if(id<=802)return{bg:'linear-gradient(135deg,#4b6cb7,#182848,#2b4a8a)',ac:'#64B5F6'};
+  return{bg:'linear-gradient(135deg,#485563,#29323c)',ac:'#90A4AE'};
+}
+function aqiInfo(a){return[,{l:'Good',c:'#26A69A',p:10},{l:'Fair',c:'#66BB6A',p:30},{l:'Moderate',c:'#FFB347',p:55},{l:'Poor',c:'#EF5350',p:75},{l:'Very Poor',c:'#AB47BC',p:95}][a]||{l:'N/A',c:'#ccc',p:0}}
+function fmtTime(u,tz){const d=new Date((u+tz)*1000);let h=d.getUTCHours(),m=d.getUTCMinutes(),ap=h>=12?'PM':'AM';h=h%12||12;return`${h}:${String(m).padStart(2,'0')} ${ap}`}
+function dayName(u,tz){return['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date((u+tz)*1000).getUTCDay()]}
+function fmtHour(u,tz){const d=new Date((u+tz)*1000);let h=d.getUTCHours(),ap=h>=12?'PM':'AM';h=h%12||12;return`${h}${ap}`}
+function windDir(deg){return['N','NE','E','SE','S','SW','W','NW'][Math.round(deg/45)%8]}
+function comfortIndex(t,h){let idx=Math.round(t-(0.55-0.0055*h)*(t-14.5));let p=Math.max(0,Math.min(100,((idx-(-10))/(50-(-10)))*100));let l=idx<10?'Cold':idx<18?'Cool':idx<24?'Comfortable':idx<30?'Warm':idx<35?'Hot':'Very Hot';return{p,l,idx}}
+function weatherTip(id,t,h,ws){
+  if(id>=200&&id<300)return{icon:'⚡',title:'Thunderstorm Alert!',text:'Stay indoors, away from windows. Unplug electronics. Avoid tall trees and open fields.'};
+  if(id>=500&&id<600)return{icon:'☂️',title:'Carry an umbrella',text:'Rain expected. Wear waterproof clothing and be careful on slippery roads.'};
+  if(id>=600&&id<700)return{icon:'🧤',title:'Bundle up tight!',text:'Snowfall likely. Dress in layers, wear boots with grip, and drive slowly.'};
+  if(id>=700&&id<800)return{icon:'😷',title:'Reduced visibility',text:'Drive slowly, use fog lights. If asthmatic, consider staying indoors today.'};
+  if(id===800&&t>35)return{icon:'🌊',title:'Stay hydrated!',text:'Extreme heat today! Drink water every hour, wear light colors, avoid peak sun 12–3 PM.'};
+  if(id===800)return{icon:'😎',title:'Perfect day outside!',text:'Clear skies! Great for outdoor activities. Don\'t forget sunscreen and sunglasses.'};
+  if(h>80)return{icon:'💧',title:'High humidity',text:'Feels muggier than the thermometer shows. Light, breathable clothing recommended.'};
+  if(ws>10)return{icon:'💨',title:'Windy conditions',text:'Secure loose outdoor objects. Be cautious driving on open highways.'};
+  return{icon:'🌤️',title:'Mild weather',text:'Partly cloudy and pleasant. A light jacket should be comfortable for most activities.'};
+}
+function getDYK(id,t){
+  const f=['Lightning strikes Earth about 100 times every second — that\'s over 8 million times a day!','A single thunderstorm can release enough water to fill over 2,000 Olympic swimming pools.','The highest recorded air temperature was 56.7°C (134°F) in Death Valley, California in 1913.','Raindrops aren\'t teardrop-shaped — they actually look like the top half of a hamburger bun!','Snowflakes always have 6 sides because of how water molecules arrange themselves into ice crystals.','Wind has no smell of its own — what we smell are particles it carries from the environment.','The fastest wind speed ever recorded was 408 km/h during Cyclone Olivia in Australia, 1996.','Fog is simply a cloud that forms at ground level — it\'s the same phenomenon, just lower.'];
+  if(id<300)return f[0];if(id<600)return f[3];if(id<700)return f[4];if(t>35)return f[2];return f[Math.floor(Math.random()*f.length)];
+}
+function newsItems(id,t,city){
+  let items=[];
+  if(id<300)items.push({tag:'alert',t:'Thunderstorm watch active in your region',m:'Weather Alert · Now'},{tag:'tip',t:'How to stay safe during electrical storms: essential guide',m:'Safety Guide'});
+  else if(id>=500&&id<600)items.push({tag:'warn',t:`Heavy rainfall advisory issued for ${city} area`,m:'Local Warning · Today'},{tag:'info',t:'Flash flood preparedness: 5 essential tips for families',m:'Emergency Guide'});
+  else if(id>=600&&id<700)items.push({tag:'warn',t:'Winter storm conditions — check road closures before traveling',m:'Road Conditions · Updated'},{tag:'tip',t:'Cold weather health tips and how to prevent frostbite',m:'Health Advisory'});
+  else if(id===800&&t>33)items.push({tag:'alert',t:`Heat advisory: temperatures reaching ${Math.round(t)}°C in ${city}`,m:'Heat Warning · Today'},{tag:'tip',t:'Beat the heat: complete hydration and cooling guide',m:'Health Tip'});
+  else items.push({tag:'info',t:`${city} extended weather outlook: what to expect this week`,m:'Weekly Forecast'});
+  items.push({tag:'info',t:'How climate change is intensifying extreme weather events globally',m:'Climate Report · This Week'},{tag:'tip',t:'Best practices for home weather preparedness in any season',m:'Preparedness Guide'},{tag:'info',t:'Understanding heat index vs. actual temperature: a simple explainer',m:'Weather Science'});
+  const tc={alert:'tag-alert',warn:'tag-warn',info:'tag-info',tip:'tag-tip'};
+  return items.map(n=>`<div class="news-item"><span class="news-tag ${tc[n.tag]||'tag-info'}">${n.tag.toUpperCase()}</span><div class="news-title">${n.t}</div><div class="news-meta">${n.m}</div></div>`).join('');
+}
+
+function render(){
+  const w=W,f=F,aq=AQ;if(!w)return;
+  const now=Date.now()/1000;
+  const isDay=now>w.sys.sunrise&&now<w.sys.sunset;
+  const icon=wIcon(w.weather[0].id,isDay);
+  const th=theme(w.weather[0].id);
+  document.documentElement.style.setProperty('--ac',th.ac);
+
+  const hourly=f?f.list.slice(0,12):[];
+  let days=[];
+  if(f){const seen={};for(const it of f.list){const k=it.dt_txt.slice(0,10);if(!seen[k]&&days.length<5){seen[k]=true;days.push(it);}}}
+
+  const aqi=aq?aqiInfo(aq.list[0].main.aqi):{l:'N/A',c:'#ccc',p:0};
+  const aqiVal=aq?aq.list[0].main.aqi:'—';
+  const tip=weatherTip(w.weather[0].id,w.main.temp,w.main.humidity,w.wind.speed*3.6);
+  const ci=comfortIndex(w.main.temp,w.main.humidity);
+  const wsp=Math.round(w.wind.speed*3.6);
+  const wd=windDir(w.wind.deg||0);
+  const sunPct=Math.min(1,Math.max(0,(now-w.sys.sunrise)/(w.sys.sunset-w.sys.sunrise)));
+  const sunX=10+sunPct*120;
+  const sunY=46-Math.sin(sunPct*Math.PI)*38;
+
+  let alertHTML='';
+  if(w.weather[0].id<300)alertHTML=`<div class="alert-banner alert-danger"><span class="alert-icon">⚡</span><span class="alert-text">Thunderstorm conditions detected in ${w.name}. Seek shelter immediately.</span></div>`;
+  else if(w.main.temp>38)alertHTML=`<div class="alert-banner alert-warn"><span class="alert-icon">🌡️</span><span class="alert-text">Extreme heat warning: ${disp(w.main.temp)}°${unit}. Stay hydrated and avoid direct sun exposure.</span></div>`;
+  else if(w.weather[0].id>=600&&w.weather[0].id<700)alertHTML=`<div class="alert-banner alert-warn"><span class="alert-icon">❄️</span><span class="alert-text">Winter weather advisory active for ${w.name}. Travel may be hazardous.</span></div>`;
+
+  document.getElementById('main').innerHTML=`
+  <div class="tabs">
+    <button class="tab ${activeTab==='weather'?'active':''}" onclick="switchTab('weather')">🌡 Now</button>
+    <button class="tab ${activeTab==='hourly'?'active':''}" onclick="switchTab('hourly')">⏱ Hourly</button>
+    <button class="tab ${activeTab==='forecast'?'active':''}" onclick="switchTab('forecast')">📅 5-Day</button>
+    <button class="tab ${activeTab==='details'?'active':''}" onclick="switchTab('details')">📊 Details</button>
+    <button class="tab ${activeTab==='news'?'active':''}" onclick="switchTab('news')">📰 News</button>
+  </div>
+  ${alertHTML}
+  <div class="hero" style="background:${th.bg}">
+    <div class="hero-particles" id="particles"></div>
+    <div class="hero-top">
+      <div>
+        <div class="city-name">${w.name}<span class="country-tag">${w.sys.country}</span></div>
+        <div class="datetime"><span class="live-dot"></span><span id="clock">—</span></div>
+      </div>
+      <div class="weather-emoji">${icon}</div>
+    </div>
+    <div class="hero-mid">
+      <div class="temp-big">${disp(w.main.temp)}<span class="temp-deg">°${unit}</span></div>
+      <div class="hero-info">
+        <div class="hero-cond">${w.weather[0].description}</div>
+        <div class="hero-feels">Feels like ${disp(w.main.feels_like)}°${unit}</div>
+        <div class="hero-minmax">↑${disp(w.main.temp_max)}° &nbsp; ↓${disp(w.main.temp_min)}°</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOW -->
+  <div class="tab-content ${activeTab==='weather'?'active':''}" id="tab-weather">
+    <div class="tip-card"><div class="tip-icon">${tip.icon}</div><div><div class="tip-title">${tip.title}</div><div class="tip-body">${tip.text}</div></div></div>
+    <div class="grid2">
+      <div class="card"><div class="cicon">💧</div><div class="clabel">Humidity</div><div class="cval">${w.main.humidity}<span style="font-size:16px">%</span></div><div class="bar-track"><div class="bar-fill" style="width:${w.main.humidity}%;background:#4FC3F7"></div></div><div class="csub">${w.main.humidity>70?'High — feels muggy':w.main.humidity>40?'Comfortable level':'Low — dry air'}</div></div>
+      <div class="card"><div class="cicon">🌬️</div><div class="clabel">Wind</div><div class="cval">${wsp}<span style="font-size:14px;font-family:'Space Grotesk'"> km/h</span></div><div class="bar-track"><div class="bar-fill" style="width:${Math.min(wsp/80*100,100)}%;background:#66BB6A"></div></div><div class="csub">${wd} direction · ${w.wind.gust?'Gusts '+Math.round(w.wind.gust*3.6)+' km/h':'Steady'}</div></div>
+    </div>
+    <div class="grid3">
+      <div class="card"><div class="cicon">🌫️</div><div class="clabel">Air Quality</div><div class="cval">${aqiVal}</div><div class="bar-track"><div class="bar-fill" style="width:${aqi.p}%;background:${aqi.c}"></div></div><div class="csub">${aqi.l}</div></div>
+      <div class="card"><div class="cicon">🌡️</div><div class="clabel">Pressure</div><div class="cval">${w.main.pressure}</div><div class="csub">hPa · ${w.main.pressure>1013?'High':'Low'}</div></div>
+      <div class="card"><div class="cicon">👁️</div><div class="clabel">Visibility</div><div class="cval">${(w.visibility/1000).toFixed(1)}</div><div class="csub">km · ${w.visibility>8000?'Excellent':w.visibility>4000?'Good':'Reduced'}</div></div>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="clabel">Comfort Index</div>
+      <div class="comfort-wrap"><div class="comfort-label">Cold</div><div class="comfort-bar"><div class="comfort-marker" style="left:${ci.p}%"></div></div><div class="comfort-label">Hot</div></div>
+      <div style="text-align:center;margin-top:10px;font-size:13px;color:var(--text2)">${ci.l} · Effective temperature ${disp(ci.idx)}°${unit}</div>
+    </div>
+    <div class="sun-card">
+      <div class="sun-item"><div class="slabel">Sunrise</div><div class="stime">${fmtTime(w.sys.sunrise,w.timezone)}</div></div>
+      <svg class="sun-arc-svg" viewBox="0 0 140 54" fill="none">
+        <path d="M10 48 Q70 6 130 48" stroke="#FFB347" stroke-width="1.5" stroke-dasharray="4 3" fill="none"/>
+        <circle cx="10" cy="48" r="3" fill="#FFB347" opacity=".4"/>
+        <circle cx="130" cy="48" r="3" fill="#FFB347" opacity=".4"/>
+        <circle cx="${sunX}" cy="${sunY}" r="8" fill="#FFB347"/>
+        <circle cx="${sunX}" cy="${sunY}" r="12" fill="#FFB347" opacity=".2"/>
+      </svg>
+      <div class="sun-item" style="text-align:right"><div class="slabel">Sunset</div><div class="stime">${fmtTime(w.sys.sunset,w.timezone)}</div></div>
+    </div>
+    <div class="map-card">
+      <div class="map-inner"><div class="map-grid"></div><div class="map-pin">📍</div><div class="map-label">${w.name}, ${w.sys.country}</div><div class="map-coords">${w.coord.lat.toFixed(4)}°N &nbsp; ${w.coord.lon.toFixed(4)}°E</div></div>
+      <div class="map-info">
+        <div class="map-stat"><div class="clabel">Latitude</div><div class="cval" style="font-size:18px">${w.coord.lat.toFixed(2)}°</div></div>
+        <div class="map-stat"><div class="clabel">Longitude</div><div class="cval" style="font-size:18px">${w.coord.lon.toFixed(2)}°</div></div>
+        <div class="map-stat"><div class="clabel">Timezone</div><div class="cval" style="font-size:16px;font-family:'Space Grotesk'">${w.timezone>=0?'+':''}${w.timezone/3600}h</div></div>
+        <div class="map-stat"><div class="clabel">Day Length</div><div class="cval" style="font-size:15px;font-family:'Space Grotesk'">${Math.floor((w.sys.sunset-w.sys.sunrise)/3600)}h ${Math.round(((w.sys.sunset-w.sys.sunrise)%3600)/60)}m</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOURLY -->
+  <div class="tab-content ${activeTab==='hourly'?'active':''}" id="tab-hourly">
+    <div class="hourly-scroll">
+      ${hourly.map((it,i)=>`<div class="hour-card ${i===0?'now':''}"><span class="htime">${i===0?'Now':fmtHour(it.dt,w.timezone)}</span><span class="hicon">${wIcon(it.weather[0].id,true)}</span><div class="htemp">${disp(it.main.temp)}°</div></div>`).join('')}
+    </div>
+    <div class="section-card">
+      <div class="sec-title">Hourly breakdown</div>
+      ${hourly.slice(0,8).map((it,i)=>`<div class="frow"><span class="fday">${i===0?'Now':fmtHour(it.dt,w.timezone)}</span><span class="ficon">${wIcon(it.weather[0].id,true)}</span><span class="fdesc">${it.weather[0].description}</span><div class="ftemps"><span class="fhi">${disp(it.main.temp)}°</span><span class="flo">${it.pop!=null?Math.round(it.pop*100)+'%🌧':''}</span></div></div>`).join('')}
+    </div>
+  </div>
+
+  <!-- 5-DAY -->
+  <div class="tab-content ${activeTab==='forecast'?'active':''}" id="tab-forecast">
+    <div class="section-card">
+      <div class="sec-title">5-Day Forecast</div>
+      ${days.map(d=>{const r=Math.max(d.main.temp_max-d.main.temp_min,1);const p=Math.min(100,Math.round(r/20*100));return`<div class="frow"><span class="fday">${dayName(d.dt,w.timezone)}</span><span class="ficon">${wIcon(d.weather[0].id,true)}</span><span class="fdesc">${d.weather[0].description}</span><div class="fbar-wrap"><div class="fbar" style="width:${p}%"></div></div><div class="ftemps"><span class="fhi">${disp(d.main.temp_max)}°</span><span class="flo">${disp(d.main.temp_min)}°</span></div></div>`;}).join('')}
+    </div>
+    <div class="grid2">
+      <div class="card"><div class="clabel">Avg Humidity (5d)</div><div class="cval">${days.length?Math.round(days.reduce((s,d)=>s+d.main.humidity,0)/days.length):w.main.humidity}<span style="font-size:16px">%</span></div><div class="csub">Next 5 days average</div></div>
+      <div class="card"><div class="clabel">Rain Chance (Tomorrow)</div><div class="cval">${days.length&&days[0].pop!=null?Math.round(days[0].pop*100):0}<span style="font-size:16px">%</span></div><div class="csub">Probability of precipitation</div></div>
+    </div>
+  </div>
+
+  <!-- DETAILS -->
+  <div class="tab-content ${activeTab==='details'?'active':''}" id="tab-details">
+    <div class="grid4">
+      <div class="card"><div class="clabel">Dew Point</div><div class="cval" style="font-size:22px">${disp(Math.round(w.main.temp-(100-w.main.humidity)/5))}°</div><div class="csub">Moisture level</div></div>
+      <div class="card"><div class="clabel">Cloud Cover</div><div class="cval" style="font-size:22px">${w.clouds.all}%</div><div class="csub">${w.clouds.all>70?'Overcast':w.clouds.all>30?'Partly cloudy':'Clear sky'}</div></div>
+      <div class="card"><div class="clabel">UV Index</div><div class="cval" style="font-size:22px">${isDay?Math.max(1,Math.round(10-w.clouds.all/14)):0}</div><div class="csub">${isDay?'Est. exposure':'Nighttime'}</div></div>
+      <div class="card"><div class="clabel">Wind Gust</div><div class="cval" style="font-size:22px">${w.wind.gust?Math.round(w.wind.gust*3.6):'—'}</div><div class="csub">km/h peak</div></div>
+    </div>
+    ${aq?`<div class="section-card"><div class="sec-title">Air Pollutants (μg/m³)</div><div class="grid4" style="margin-bottom:0"><div class="card"><div class="clabel">PM2.5</div><div class="cval" style="font-size:22px">${aq.list[0].components.pm2_5.toFixed(1)}</div><div class="csub">Fine particles</div></div><div class="card"><div class="clabel">PM10</div><div class="cval" style="font-size:22px">${aq.list[0].components.pm10.toFixed(1)}</div><div class="csub">Coarse particles</div></div><div class="card"><div class="clabel">NO₂</div><div class="cval" style="font-size:22px">${aq.list[0].components.no2.toFixed(1)}</div><div class="csub">Nitrogen dioxide</div></div><div class="card"><div class="clabel">O₃</div><div class="cval" style="font-size:22px">${aq.list[0].components.o3.toFixed(1)}</div><div class="csub">Ozone</div></div></div></div>`:''}
+    <div class="grid2">
+      <div class="card"><div class="clabel">Sea Level Pressure</div><div class="cval">${w.main.sea_level||w.main.pressure}</div><div class="csub">hPa</div></div>
+      <div class="card"><div class="clabel">Ground Pressure</div><div class="cval">${w.main.grnd_level||w.main.pressure}</div><div class="csub">hPa</div></div>
+    </div>
+  </div>
+
+  <!-- NEWS -->
+  <div class="tab-content ${activeTab==='news'?'active':''}" id="tab-news">
+    <div class="section-card"><div class="sec-title">Weather Alerts & Updates</div>${newsItems(w.weather[0].id,w.main.temp,w.name)}</div>
+    <div class="card" style="margin-bottom:14px"><div class="clabel" style="margin-bottom:8px">💡 Did You Know?</div><div style="font-size:13px;color:var(--text2);line-height:1.8">${getDYK(w.weather[0].id,w.main.temp)}</div></div>
+  </div>`;
+
+  // Clock
+  if(window._ci)clearInterval(window._ci);
+  window._ci=setInterval(()=>{
+    const el=document.getElementById('clock');if(!el){clearInterval(window._ci);return;}
+    const n=new Date();const lt=new Date(n.getTime()+(w.timezone*1000)+(n.getTimezoneOffset()*60000));
+    el.textContent=lt.toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  },1000);
+
+  // Particles
+  const pc=document.getElementById('particles');
+  if(pc){for(let i=0;i<7;i++){const p=document.createElement('div');p.className='particle';const s=20+Math.random()*70;p.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;top:${20+Math.random()*80}%;animation-duration:${5+Math.random()*7}s;animation-delay:${Math.random()*5}s`;pc.appendChild(p);}}
+}
+
+function switchTab(t){activeTab=t;render();}
+function showErr(m){const e=document.getElementById('err');e.textContent=m;e.style.display='block';setTimeout(()=>e.style.display='none',5000);}
+
+async function load(q,isCoord=false){
+  document.getElementById('main').innerHTML='<div class="loading"><span class="spin">🌐</span><br><br>Loading weather data...</div>';
+  document.getElementById('err').style.display='none';
+  try{
+    const base='https://api.openweathermap.org/data/2.5';
+    const qs=isCoord?`lat=${q.lat}&lon=${q.lon}`:`q=${encodeURIComponent(q)}`;
+    const [wr,fr]=await Promise.all([fetch(`${base}/weather?${qs}&appid=${K}&units=metric`),fetch(`${base}/forecast?${qs}&appid=${K}&units=metric`)]);
+    if(!wr.ok){showErr('City not found. Please try another name.');document.getElementById('main').innerHTML='';return;}
+    W=await wr.json();F=fr.ok?await fr.json():null;
+    const aqr=await fetch(`${base}/air_pollution?lat=${W.coord.lat}&lon=${W.coord.lon}&appid=${K}`);
+    AQ=aqr.ok?await aqr.json():null;
+    render();
+  }catch(e){showErr('Network error. Please check your internet connection.');document.getElementById('main').innerHTML='';}
+}
+
+function doSearch(){const q=document.getElementById('ci').value.trim();if(q)load(q);}
+function setUnit(u){unit=u;document.getElementById('bc').className='ubtn'+(u==='C'?' active':'');document.getElementById('bf').className='ubtn'+(u==='F'?' active':'');if(W)render();}
+function getLocation(){
+  document.getElementById('main').innerHTML='<div class="loading"><span class="spin">📍</span><br><br>Getting your location...</div>';
+  if(navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>load({lat:p.coords.latitude,lon:p.coords.longitude},true),()=>load('Narayanganj'),{timeout:8000});
+  else load('Narayanganj');
+}
+
+getLocation();
+</script>
+</body>
+</html>
